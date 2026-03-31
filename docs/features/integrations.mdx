@@ -1,93 +1,164 @@
----
-title: Integrations (PRIVATE BETA)
-description: Integrate with the Zapp! Compiler, Analyzer, Remote Build & more.
----
+import 'package:flutter/material.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
-# Integrations (PRIVATE BETA)
+void main() {
+  runApp(MyYouTubeStatusApp());
+}
 
-The Zapp! editor is powered by a number of integration services, which are unique to the Zapp! platform.
-If you have a service or product which could benefit from the below integrations, please get in touch
-with us via [Discord](https://zapp.run/on/discord).
+class MyYouTubeStatusApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: Colors.black,
+      ),
+      home: YouTubeFeedScreen(),
+    );
+  }
+}
 
-<Info>
-  The integration APIs are a paid service. Please contact us for more
-  information.
-</Info>
+class YouTubeFeedScreen extends StatelessWidget {
+  final List<Map<String, String>> statusData = [
+    {"id": "dQw4w9WgXcQ", "title": "Romantic Status 01", "views": "1.5M"},
+    {"id": "ZBCUegTZF7M", "title": "React Native Full Course", "views": "12K"},
+    {"id": "ScMzIvxBSi4", "title": "New Attitude Status 2026", "views": "800K"},
+  ];
 
-## Compiler
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        title: Text("YouTube", 
+          style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 24)),
+        actions: [
+          IconButton(icon: Icon(Icons.cast), onPressed: () {}),
+          IconButton(icon: Icon(Icons.notifications_none), onPressed: () {}),
+          IconButton(icon: Icon(Icons.search), onPressed: () {}),
+          CircleAvatar(radius: 14, backgroundColor: Colors.blue),
+          SizedBox(width: 15),
+        ],
+      ),
+      body: ListView.builder(
+        itemCount: statusData.length,
+        itemBuilder: (context, index) {
+          return StatusVideoCard(
+            videoId: statusData[index]['id']!,
+            title: statusData[index]['title']!,
+            views: statusData[index]['views']!,
+          );
+        },
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Colors.black,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.grey,
+        items: [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.play_arrow_outlined), label: 'Shorts'),
+          BottomNavigationBarItem(icon: Icon(Icons.add_circle_outline, size: 35), label: ''),
+          BottomNavigationBarItem(icon: Icon(Icons.subscriptions_outlined), label: 'Subscriptions'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'You'),
+        ],
+      ),
+    );
+  }
+}
 
-The Zapp! compiler is a JavaScript script which enables compilation of a Dart or Flutter application
-into a runnable web application. The compiler is fully browser based, and can be used to compile
-projects on the fly directly from the browser.
+class StatusVideoCard extends StatefulWidget {
+  final String videoId;
+  final String title;
+  final String views;
 
-Alongside this the compiler is extremely perforant, being able to compile large applications in
-seconds (somtimes even milliseconds!).
+  StatusVideoCard({required this.videoId, required this.title, required this.views});
 
-```js
-// Your domain based API key
-const API_KEY = "...";
+  @override
+  _StatusVideoCardState createState() => _StatusVideoCardState();
+}
 
-// Import the Zapp! JS compiler
-const compiler = await import(
-  `https://cdn.zapp.run/compiler.min.js?key=${API_KEY}`
-);
+class _StatusVideoCardState extends State<StatusVideoCard> {
+  late YoutubePlayerController _controller;
+  bool isLiked = false;
 
-// Load a file system into the compiler
-await compiler.loadFileSystem({
-  "pubspec.yaml": "...",
-  "lib/main.dart": "...",
-});
+  @override
+  void initState() {
+    super.initState();
+    _controller = YoutubePlayerController(
+      initialVideoId: widget.videoId,
+      flags: YoutubePlayerFlags(autoPlay: false, mute: false),
+    );
+  }
 
-// Update any pub dependencies
-await compiler.runPubGet();
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        YoutubePlayer(
+          controller: _controller,
+          showVideoProgressIndicator: true,
+          progressIndicatorColor: Colors.red,
+        ),
+        ListTile(
+          leading: CircleAvatar(backgroundColor: Colors.red, child: Text("S")),
+          title: Text(widget.title, style: TextStyle(fontWeight: FontWeight.bold)),
+          subtitle: Text("Status King • ${widget.views} views • 2 min ago"),
+          trailing: Icon(Icons.more_vert),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: 12, bottom: 12),
+          child: Row(
+            children: [
+              _buildPillButton(
+                child: Row(
+                  children: [
+                    IconButton(
+                      constraints: BoxConstraints(),
+                      padding: EdgeInsets.zero,
+                      icon: Icon(isLiked ? Icons.thumb_up : Icons.thumb_up_outlined, size: 20),
+                      onPressed: () => setState(() => isLiked = !isLiked),
+                    ),
+                    SizedBox(width: 8),
+                    Text("83K"),
+                    VerticalDivider(color: Colors.white24, width: 20),
+                    Icon(Icons.thumb_down_outlined, size: 20),
+                  ],
+                ),
+              ),
+              SizedBox(width: 10),
+              _buildPillButton(
+                child: Row(
+                  children: [
+                    Icon(Icons.share, size: 20),
+                    SizedBox(width: 8),
+                    Text("Share"),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        Divider(color: Colors.white12, thickness: 1),
+      ],
+    );
+  }
 
-// Compile the Flutter app!
-const output = await compiler.run("lib/main.dart");
+  Widget _buildPillButton({required Widget child}) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white12,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: child,
+    );
+  }
 
-// Mount the Flutter app to the DOM
-compiler.mount(output, document.getElementById("flutter-app"));
-```
-
-### Features
-
-The compiler supports the following:
-
-- Compilation of Dart and Flutter applications into a mountable web application.
-- Multiple-file support.
-- Package support via `pubspec.yaml`.
-- Asset support (both local and package assets).
-
-## Analyzer
-
-The Zapp! compiler is a JavaScript script which enables running the Dart analyzer on a Dart or Flutter
-codebase. The analyzer returns detailed information about an application, such as errors & warnings,
-along with meta-information about the application (for example, the Widget outline).
-
-The analyzer is a performant browser based implementation of the Dart analyzer.
-
-```js
-// Your domain based API key
-const API_KEY = "...";
-
-// Import the Zapp! JS analyzer
-const analyer = await import(
-  `https://cdn.zapp.run/compiler.min.js?key=${API_KEY}`
-);
-
-// Load a file system into the analyzer
-await analyer.loadFileSystem({
-  "pubspec.yaml": "...",
-  "lib/main.dart": "...",
-});
-
-// Run the analyzer and get the output
-const output = await analyer.run();
-```
-
-## Remote Builds
-
-The remote build service powers both the [Pub Import](/features/pubdev-previews)
-& [GitHub Import](/features/github-import) features. The remote build service is a API endpoint
-accepting a Dart or Flutter application (as an archive), and returns a compiled web application.
-
-The remote build service is a performant, server based implementation of the Zapp! compiler.
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+}
